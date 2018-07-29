@@ -14,12 +14,17 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlinVersion}")
     }
 }
-
+plugins {
+    id 'com.palantir.docker' version '0.20.1'
+    id 'com.palantir.docker-run' version '0.11.0'
+    id 'com.palantir.docker-compose' version '0.11.0'
+}
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-spring'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'com.palantir.docker'
 
 group = 'be.kotlin.myrestapi'
 version = '0.0.1-SNAPSHOT'
@@ -41,6 +46,25 @@ bootJar {
     launchScript ()
 }
 
+docker {
+    name "kotlin_swagger_docker"
+    tags 'latest'
+    dockerfile file('Dockerfile')
+    files bootJar.archivePath
+    buildArgs(['JAR_FILE': "${bootJar.archiveName}"])
+    pull true
+    noCache true
+}
+
+dockerRun {
+    name 'kotlin_swagger_run'
+    image 'kotlin_swagger_img'
+    volumes 'out': '/test'
+    ports '5000:8080'
+    daemonize true
+    env 'MYVAR1': 'MYVALUE1', 'MYVAR2': 'MYVALUE2'
+    command 'sleep', '100'
+}
 
 dependencies {
     compile('org.springframework.boot:spring-boot-starter-data-jpa')
